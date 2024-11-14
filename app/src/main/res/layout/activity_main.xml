@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="16dp"
+    android:gravity="center">
+
+    <!-- Título de bienvenida -->
+
+    <!-- Botón para ingresar la hora -->
+    <TextView
+        android:id="@+id/tvTituloBienvenida"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="20dp"
+        android:text="Bienvenido"
+        android:textSize="24sp"
+        android:textStyle="bold" />
+    <ImageView
+        android:id="@+id/imgSeparador"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:src="@drawable/logopelu"
+        android:layout_marginBottom="20dp"/>
+
+    <Button
+        android:id="@+id/btnIngresarHora"
+        android:layout_width="159dp"
+        android:layout_height="68dp"
+        android:layout_marginBottom="20dp"
+        android:text="Ingresar Hora"
+        android:textSize="20dp"/>
+
+    <!-- Botón para ver el listado de horas -->
+    <Button
+        android:id="@+id/btnVerListadoHoras"
+        android:layout_width="191dp"
+        android:layout_height="82dp"
+        android:text="Ver Listado de Horas"
+        android:textSize="20dp" />
+
+</LinearLayout>
