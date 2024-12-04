@@ -4,29 +4,35 @@ import android.os.Bundle;
 
 import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.graphics.Insets;
-import androidx.core.view.ViewCompat;
-import androidx.core.view.WindowInsetsCompat;
-import android.content.Context;
+
 import android.content.Intent;
-import android.database.sqlite.SQLiteDatabase;
-import android.database.sqlite.SQLiteStatement;
-import android.os.Bundle;
-import android.view.View;
+
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Toast;
-import androidx.appcompat.app.AppCompatActivity;
+
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+
 public class Edicion extends AppCompatActivity {
 
     private EditText ed_mascota, ed_duenio, ed_fecha, ed_id;
     private Button b_editar,b_eliminar,b_volver;
+
+    private MqttHandler mqttHandler;
+
+    private static final String BROKER= "tcp://broker.emqx.io:1883";
+    private static final String CLIENT_ID= "cliente_felipeeva3";
+    private static final String TOPIC_SUB= "pipeeval3";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_edicion);
+
+        FirebaseDatabase database = FirebaseDatabase.getInstance();
+        DatabaseReference horasRef = database.getReference("horas");
 
         ed_mascota=findViewById(R.id.editar_nombre);
         ed_duenio=findViewById(R.id.editar_duenio);
@@ -49,6 +55,12 @@ public class Edicion extends AppCompatActivity {
         ed_duenio.setText(et_duenio);
         ed_fecha.setText(et_fecha);
 
+        mqttHandler=new MqttHandler();
+
+        mqttHandler.connect(BROKER,CLIENT_ID);
+
+        mqttHandler.subscribe(TOPIC_SUB);
+
         b_editar.setOnClickListener(new android.view.View.OnClickListener(){
             @Override
             public void onClick(android.view.View view){editar();}
@@ -69,62 +81,45 @@ public class Edicion extends AppCompatActivity {
     }
 
     public void editar(){
-        try{
-            String id =ed_id.getText().toString();
-            String mascota=ed_mascota.getText().toString();
-            String duenio=ed_duenio.getText().toString();
-            String fecha=ed_fecha.getText().toString();
 
-            SQLiteDatabase db=openOrCreateDatabase("BD",Context.MODE_PRIVATE,null);
+        String id =ed_id.getText().toString();
+        String mascota=ed_mascota.getText().toString();
+        String duenio=ed_duenio.getText().toString();
+        String fecha=ed_fecha.getText().toString();
 
-            String sql = "update atencion set Mascota=?, Dueño=?, Fecha=? where id=?";
-            SQLiteStatement statement=db.compileStatement(sql);
 
-            statement.bindString(1, mascota);
-            statement.bindString(2, duenio);
-            statement.bindString(3, fecha);
-            statement.bindString(4, id);
-            statement.execute();
 
-            Toast.makeText(this, "Datos editados", Toast.LENGTH_LONG).show();
+        HoraAtencion nuevahora= new HoraAtencion(id,mascota,duenio,fecha);
 
-            ed_mascota.setText("");
-            ed_duenio.setText("");
-            ed_fecha.setText("");
-            ed_mascota.requestFocus();
+        FirebaseDatabase database = FirebaseDatabase.getInstance();
+        DatabaseReference horasRef = database.getReference("horas");
+        DatabaseReference horasAct=horasRef.child(id);
+        horasAct.setValue(nuevahora);
 
-        }catch (Exception ex) {
-            Toast.makeText(this, "Error, no se pudieron editar los datos.",
-                    Toast.LENGTH_LONG).show();
+        Toast.makeText(this, "Datos editados", Toast.LENGTH_LONG).show();
 
-        }
+        mqttHandler.publish(TOPIC_SUB,"Dato en la database de firebase editado..."
+                +"/t"+" id: "+id+" Nuevos datos: "+"/t"+ "Mascota: "
+                +mascota+" Dueño: "+ duenio+ " Fecha: "+fecha);
+
     }
 
     public void eliminar(){
 
-        try{
+        String id =ed_id.getText().toString();
+        FirebaseDatabase database = FirebaseDatabase.getInstance();
+        DatabaseReference horasRef = database.getReference("horas");
+        DatabaseReference horasDel=horasRef.child(id);
+        horasDel.removeValue();
 
-            String id =ed_id.getText().toString();
+        ed_mascota.setText("");
+        ed_duenio.setText("");
+        ed_fecha.setText("");
+        ed_mascota.requestFocus();
+        Toast.makeText(this, "Datos eliminados", Toast.LENGTH_LONG).show();
 
-            SQLiteDatabase db=openOrCreateDatabase("BD",Context.MODE_PRIVATE,null);
+        mqttHandler.publish(TOPIC_SUB,"Dato en la database de firebase de id: "+id+"/t"+
+                " ha sido eliminado");
 
-            String sql = "delete from atencion where id=?";
-            SQLiteStatement statement=db.compileStatement(sql);
-
-            statement.bindString(1, id);
-            statement.execute();
-
-            Toast.makeText(this, "Datos eliminados", Toast.LENGTH_LONG).show();
-
-            ed_mascota.setText("");
-            ed_duenio.setText("");
-            ed_fecha.setText("");
-            ed_mascota.requestFocus();
-
-        }catch (Exception ex) {
-            Toast.makeText(this, "Error, no se pudieron borrar los datos.",
-                    Toast.LENGTH_LONG).show();
-
-        }
     }
 }

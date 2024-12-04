@@ -1,17 +1,17 @@
 package com.pipepino.evaluacin2;
 
-import android.database.sqlite.SQLiteStatement;
+
 import android.os.Bundle;
 
 import androidx.activity.EdgeToEdge;
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 import android.content.Context;
 import android.content.Intent;
-import android.database.Cursor;
-import android.database.sqlite.SQLiteDatabase;
+
 import android.os.Bundle;
 import android.view.View;
 import android.widget.AdapterView;
@@ -21,6 +21,13 @@ import android.widget.ListView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
+
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
+
 import java.util.ArrayList;
 public class Listado extends AppCompatActivity {
 
@@ -28,6 +35,10 @@ public class Listado extends AppCompatActivity {
     private ArrayList<String> listado=new ArrayList<String>();
     private ArrayAdapter arrayAdapter;
     private Button b_volver;
+
+    /*FirebaseDatabase db = FirebaseDatabase.getInstance();
+    DatabaseReference ref= db.getReference("horas");*/
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -35,53 +46,51 @@ public class Listado extends AppCompatActivity {
         setContentView(R.layout.activity_listado);
         b_volver=findViewById(R.id.btn_volver);
 
-        try{
+        try {
+            // Inicializa Firebase
+            FirebaseDatabase database = FirebaseDatabase.getInstance();
+            DatabaseReference horasRef = database.getReference("horas");
 
-            SQLiteDatabase db=openOrCreateDatabase("BD",Context.MODE_PRIVATE,null);
-
-            lista=findViewById(R.id.lista);
-
-            final Cursor c= db.rawQuery("select * from atencion",null);
-
-            int id =c.getColumnIndex("id");
-            int mascota=c.getColumnIndex("Mascota");
-            int duenio=c.getColumnIndex("Dueño");
-            int fecha=c.getColumnIndex("Fecha");
-
+            lista = findViewById(R.id.lista);
             listado.clear();
-
-            arrayAdapter=new ArrayAdapter(this,androidx.appcompat.R.layout.support_simple_spinner_dropdown_item, listado);
-
+            arrayAdapter = new ArrayAdapter(this, androidx.appcompat.R.layout.support_simple_spinner_dropdown_item, listado);
             lista.setAdapter(arrayAdapter);
 
-            final ArrayList<HoraAtencion> listaIngresos=new ArrayList<HoraAtencion>();
+            final ArrayList<HoraAtencion> listaIngresos = new ArrayList<>();
 
-            if(c.moveToFirst()){
-                do{
-                    HoraAtencion atencion=new HoraAtencion();
-                    atencion.id=c.getString(id);
-                    atencion.nombre=c.getString(mascota);
-                    atencion.duenio=c.getString(duenio);
-                    atencion.fecha=c.getString(fecha);
+            // Lee datos desde Firebase
+            horasRef.addValueEventListener(new ValueEventListener() {
+                @Override
+                public void onDataChange(@NonNull DataSnapshot snapshot) {
+                    listado.clear(); // Limpia la lista antes de llenarla
+                    listaIngresos.clear();
+                    int contador=0;
+                    for (DataSnapshot horaSnapshot : snapshot.getChildren()) {
+                        HoraAtencion atencion = horaSnapshot.getValue(HoraAtencion.class);
+                        atencion.setId(horaSnapshot.getKey());
+                        if (atencion != null) {
+                            listaIngresos.add(atencion);
+                            listado.add(contador + " \t " + atencion.nombre + " \t " + atencion.duenio + " \t " + atencion.fecha);
+                        }
+                        contador++;
+                    }
 
-                    listaIngresos.add(atencion);
+                    arrayAdapter.notifyDataSetChanged();
+                    lista.invalidateViews();
+                }
 
-                    listado.add(c.getString(id)+ " \t " + c.getString(mascota) + " \t " + c.getString(duenio) + " \t " + c.getString(fecha));
-
-                }while(c.moveToNext());
-
-                arrayAdapter.notifyDataSetChanged();
-
-                lista.invalidateViews();
-
-            }
+                @Override
+                public void onCancelled(@NonNull DatabaseError error) {
+                    Toast.makeText(Listado.this, "Error al leer datos de Firebase", Toast.LENGTH_SHORT).show();
+                }
+            });
 
             lista.setOnItemClickListener(new AdapterView.OnItemClickListener() {
                 @Override
-                public void onItemClick(AdapterView<?> adapterView, android.view.View view, int posicion, long l) {
-                    HoraAtencion atencion=listaIngresos.get(posicion);
+                public void onItemClick(AdapterView<?> adapterView, View view, int posicion, long l) {
+                    HoraAtencion atencion = listaIngresos.get(posicion);
 
-                    Intent i=new Intent(getApplicationContext(),Edicion.class);
+                    Intent i = new Intent(getApplicationContext(), Edicion.class);
 
                     i.putExtra("id", atencion.id);
                     i.putExtra("mascota", atencion.nombre);
@@ -89,21 +98,21 @@ public class Listado extends AppCompatActivity {
                     i.putExtra("fecha", atencion.fecha);
 
                     startActivity(i);
-
                 }
             });
 
-        }catch (Exception e) {
-            Toast.makeText(this, "Error, try again e.e", Toast.LENGTH_SHORT).show();
+        } catch (Exception e) {
+            Toast.makeText(this, "Error, intenta de nuevo", Toast.LENGTH_SHORT).show();
         }
 
         b_volver.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                Intent i=new Intent(getApplicationContext(), MainActivity.class);
+                Intent i = new Intent(getApplicationContext(), MainActivity.class);
                 startActivity(i);
             }
         });
+
 
     }
 }

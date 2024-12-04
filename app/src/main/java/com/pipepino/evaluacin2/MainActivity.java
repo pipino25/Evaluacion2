@@ -20,10 +20,7 @@ import android.widget.Toast;
 
 
 public class MainActivity extends AppCompatActivity {
-
     private Button b_ingresar, b_lista;
-
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -48,6 +45,5 @@ public class MainActivity extends AppCompatActivity {
                 startActivity(i);
             }
         });
-
     }
 }

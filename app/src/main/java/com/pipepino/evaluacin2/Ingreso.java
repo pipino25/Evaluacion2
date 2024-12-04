@@ -9,8 +9,7 @@ import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 import android.content.Context;
 import android.content.Intent;
-import android.database.sqlite.SQLiteDatabase;
-import android.database.sqlite.SQLiteStatement;
+
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
@@ -18,10 +17,26 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Toast;
 
+import com.google.android.gms.tasks.Task;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.firestore.CollectionReference;
+import com.google.firebase.firestore.DocumentReference;
+
+import java.util.HashMap;
+import java.util.Map;
+
 public class Ingreso extends AppCompatActivity {
+
+    private static final String BROKER= "tcp://broker.emqx.io:1883";
+    private static final String CLIENT_ID= "cliente_felipeeva3";
+    private static final String TOPIC_SUB= "pipeeval3";
+    private MqttHandler mqttHandler;
 
     private EditText ed_mascota, ed_duenio, ed_fecha;
     private Button b_ingresar, b_volver;
+    FirebaseDatabase db = FirebaseDatabase.getInstance();
+    DatabaseReference horasRef = FirebaseDatabase.getInstance().getReference("horas");
 
 
     @Override
@@ -35,6 +50,12 @@ public class Ingreso extends AppCompatActivity {
 
         b_ingresar=findViewById(R.id.btn_ingresar);
         b_volver=findViewById(R.id.btn_volver);
+
+        mqttHandler=new MqttHandler();
+
+        mqttHandler.connect(BROKER,CLIENT_ID);
+
+        mqttHandler.subscribe(TOPIC_SUB);
 
         b_volver.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -52,34 +73,30 @@ public class Ingreso extends AppCompatActivity {
         });
     }
     public void insertar(){
-        try{
-            String mascota=ed_mascota.getText().toString();
-            String duenio=ed_duenio.getText().toString();
-            String fecha=ed_fecha.getText().toString();
 
-            SQLiteDatabase db=openOrCreateDatabase("BD",Context.MODE_PRIVATE,null);
+        Map<String,Object> horaAtencionData=new HashMap<>();
 
-            db.execSQL("CREATE TABLE IF NOT EXISTS atencion(id INTEGER PRIMARY KEY AUTOINCREMENT," +
-                    " Mascota VARCHAR, Dueño VARCHAR, Fecha VARCHAR)");
+        String mascota=ed_mascota.getText().toString();
+        String duenio=ed_duenio.getText().toString();
+        String fecha=ed_fecha.getText().toString();
+        //String id=db.
+        horaAtencionData.put("nombre",mascota);
+        horaAtencionData.put("duenio",duenio);
+        horaAtencionData.put("fecha",fecha);
 
-            String sql = "insert into atencion(Mascota, Dueño, Fecha) values(?, ?, ?)";
-            SQLiteStatement statement=db.compileStatement(sql);
+        horasRef.push().setValue(horaAtencionData).addOnSuccessListener(aVoid -> Log.d("Firebase","Operación exitosa"))
+                .addOnFailureListener(e -> Log.e("Firebase","Error en la operacion",e));
 
-            statement.bindString(1, mascota);
-            statement.bindString(2, duenio);
-            statement.bindString(3, fecha);
+        ed_mascota.setText("");
+        ed_duenio.setText("");
+        ed_fecha.setText("");
 
-            statement.execute();
+        mqttHandler.publish(TOPIC_SUB,"Dato agregado a la database de firebase: Mascota: "
+                +mascota+" Dueño: "+ duenio+ " Fecha: "+fecha);
 
-            Toast.makeText(this,"Datos agregados satisfactoriamente en la base de datos.",
-                    Toast.LENGTH_LONG).show();
+        Toast.makeText(this,"Datos agregados satisfactoriamente en la base de datos Firebase.",
+                Toast.LENGTH_LONG).show();
 
-            ed_mascota.setText("");
-            ed_duenio.setText("");
-            ed_fecha.setText("");
 
-        }catch(Exception ex){
-            Toast.makeText(this,"Error de ingreso",Toast.LENGTH_LONG).show();
-        }
     }
 }

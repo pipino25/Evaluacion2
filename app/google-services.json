@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "985078359916",
+    "project_id": "evaluacion3-e0e70",
+    "storage_bucket": "evaluacion3-e0e70.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:985078359916:android:9e06a34652482f600d3549",
+        "android_client_info": {
+          "package_name": "com.pipepino.evaluacin2"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCOjJdrZSVTolHg5mEhnLA5JDTn5T-QTb4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
